@@ -1,0 +1,185 @@
+# ============================================================================
+# Python 通用规则
+# ============================================================================
+# 字节码与编译文件
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.pyd
+
+# 分发/打包
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# 虚拟环境
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# 测试与代码质量
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+.coverage
+coverage.xml
+htmlcov/
+*.cover
+.hypothesis/
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# ============================================================================
+# IDE / 编辑器
+# ============================================================================
+# VSCode
+.vscode/
+!.vscode/*.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# PyCharm / IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Vim
+*.swp
+*.swo
+*~
+*.swn
+
+# Emacs
+*~
+\#*\#
+.\#*
+
+# ============================================================================
+# 系统文件
+# ============================================================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# ============================================================================
+# 项目输出目录（全部忽略）
+# ============================================================================
+# 输出目录
+outputs/
+outputs/**
+
+# 历史遗留输出目录（若存在）
+models/
+models/**
+reports/
+reports/**
+logs/
+logs/**
+cache/
+cache/**
+
+# src/ 下不应入库的运行时目录
+src/cache/
+src/logs/
+src/outputs/
+src/data/
+src/configs/
+
+# 日志文件
+*.log
+*.log.*
+
+# ============================================================================
+# 数据文件策略
+# ============================================================================
+# 默认忽略 data/ 下的大多数数据与中间产物
+data/**
+# 白名单：允许跟踪 data 根目录说明文档
+!data/README.md
+# 取消忽略 raw/ 目录以便后续白名单生效
+!data/raw/
+# 忽略 raw/ 目录下的所有文件
+data/raw/*
+# 白名单：允许跟踪小样例文件和文档
+!data/raw/README.md
+!data/raw/patents_test.csv
+# 注意：data/raw/patents.csv (53MB) 不应被跟踪
+# 如需跟踪其他小样例文件，请在此处添加白名单规则
+
+# 中间处理数据（明确忽略）
+data/processed/
+data/interim/
+data/external/
+
+# ============================================================================
+# 配置文件策略
+# ============================================================================
+# configs/ 目录应当跟踪，但忽略敏感配置
+configs/*secret*.yaml
+configs/*secret*.yml
+configs/*.local.yaml
+configs/*.local.yml
+configs/*.local.json
+
+# 环境变量文件
+.env
+.env.*
+!.env.example
+!.env.template
+
+# ============================================================================
+# 临时文件与备份
+# ============================================================================
+*.tmp
+*.temp
+*.bak
+*.backup
+*.old
+*.orig
+*.save
+
+# ============================================================================
+# 其他
+# ============================================================================
+# 本地论文/参考 PDF，不纳入首提
+main.pdf
+
+# 大型数据文件扩展名（如果出现在根目录或其他位置）
+*.h5
+*.hdf5
+*.pkl
+*.pkl.gz
+*.pickle
+*.joblib
+# 注意：如果 outputs/ 或 models/ 下的 .pkl 文件需要被忽略，
+# 上述规则已通过 outputs/ 和 models/ 目录规则覆盖

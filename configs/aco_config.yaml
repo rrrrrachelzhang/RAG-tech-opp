@@ -1,0 +1,43 @@
+# ACO算法配置文件
+# 基于 20260403 参数敏感性分析 v2：平衡探索/利用，增大搜索预算
+
+# 蚂蚁数量
+num_ants: 300
+
+# 迭代代数（增大：给更多搜索预算，配合 patience=80 早停）
+num_generations: 400
+
+# 每代保留的最佳解数量（从 30→5：只让真正好的解沉积信息素，过滤差解污染）
+top_k_per_gen: 5
+
+# 信息素参数
+pheromone:
+  init: 1.0         # 初始信息素浓度
+  alpha: 1.5         # 信息素因子（从 2→1.5：适度降低，保持引导力但减少过早收敛）
+  rho: 0.85          # 信息素保留率（从 0.90→0.85：适度加快遗忘）
+  tau_min: 0.05      # MIN-MAX 下限（从 0.01→0.05：给未探索边更多机会）
+  tau_max: 4.0       # MIN-MAX 上限（从 6.0→4.0：信息素极差从 600x→80x）
+
+# 启发式参数
+heuristic:
+  beta: 3            # 启发式因子
+
+# 其他参数
+subnetwork_size: 15  # 子网络大小
+top_k_opportunities: 10  # 最终返回的机会数量
+max_overlap_ratio: 0.5  # Jaccard 多样性过滤
+
+# 新颖度引导参数
+novelty:
+  weight: 2.0            # η 中新颖度加权系数 γ
+  novel_ant_ratio: 0.3   # "新颖蚂蚁"占比
+  new_edge_bonus: 6.0    # 新颖蚂蚁经过新边时的权重乘数 bonus
+
+# 调试：覆盖 Step2 的 objective_coefficients.json 中的系数（同名键覆盖，可新增键）
+# 留空或注释掉表示完全使用 Step2 产物，不做覆盖
+# 示例（特征名须与回归/特征注册表一致，如 New_n, Min_pn, Con_e, Eigen）:
+# override_coefficients:
+#   New_n: 0.406
+#   Eigen: -3.546
+override_coefficients: null
+

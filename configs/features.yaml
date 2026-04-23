@@ -1,0 +1,20 @@
+# 特征选择配置文件
+# 用于指定回归模型中使用的特征
+
+# 回归特征列表（仅核心变量，不含控制变量）
+# 7 个特征，与 Alpha Selection Step2.1 一致
+regression_features:
+  - New_n       # 新颖性：是否包含新节点
+  - New_e       # 新颖性：是否包含新边
+  - Min_pn      # 新颖性：最小专利覆盖数
+  - Con_n       # 结构变量：节点常规性
+  - Con_e       # 结构变量：边常规性（边 weight 中位数）
+  - Eigen       # 结构变量：特征向量中心性
+  - Constraint  # 结构变量：Burt 网络约束最小值
+
+# 是否包含控制变量（Back_cite, Assignee, Total_pat）
+include_control_vars: true
+
+# 注意：
+# - 所有特征必须严格从HDKN计算
+# - 可通过CLI参数 --features 覆盖此配置

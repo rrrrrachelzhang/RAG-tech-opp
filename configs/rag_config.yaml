@@ -1,0 +1,21 @@
+# =============================================================================
+# RAG 报告生成配置
+# =============================================================================
+# DeepSeek API 配置（API Key 通过环境变量 DEEPSEEK_API_KEY 传入，不写入文件）
+deepseek_base_url: "https://api.deepseek.com"
+model_name: "deepseek-chat"
+max_tokens: 4096
+temperature: 0.1        # 低温度降低幻觉
+
+# 报告生成参数
+top_n_edges: 10          # 取前 N 条边（按配额分配：special 全选 + new/conventional 约 1:1）
+top_k_patents: 15        # 最多提供的核心专利数量
+evidence_max_chars: 60000  # 证据库字符串总长度上限，防止 Token 超限
+
+# === 引用验证配置 ===
+enable_citation_validation: true    # 是否启用引用验证
+citation_cleanup_strategy: "mark"   # mark/remove/keep
+# - mark: 保留幻觉引用并添加 [⚠未验证] 警告标记（推荐，便于人工审查）
+# - remove: 直接删除幻觉引用
+# - keep: 保留原样仅记录日志
+append_validation_report: true      # 是否在报告末尾追加验证报告

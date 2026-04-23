@@ -1,0 +1,23 @@
+[tool.pylint.main]
+# 配置 Pylint 主设置
+# 使用系统 Python 路径
+init-hook='import sys; import os; sys.path.insert(0, os.path.expanduser("~/.local/lib/python3.10/site-packages")); sys.path.insert(0, "/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages")'
+
+[tool.pylint."messages control"]
+# 禁用一些不必要的警告
+disable = [
+    "import-error",  # 禁用导入错误，因为包已安装但 Pylint 可能找不到
+    "no-member",    # 可选：禁用成员访问错误
+    "unused-argument",  # 禁用未使用参数警告
+    "unused-variable",  # 禁用未使用变量警告
+    "bare-except",  # 禁用裸异常警告
+]
+
+[tool.pylint.basic]
+# 基本设置
+good-names = ["i", "j", "k", "ex", "Run", "_", "id", "np", "nx", "DKN", "subg", "G", "x", "n", "u", "v", "d", "nbr", "w", "ec"]
+
+[tool.pylint.format]
+# 代码格式设置
+max-line-length = 120
+
