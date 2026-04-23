@@ -11,7 +11,7 @@ import json
 import math
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import matplotlib
 matplotlib.use("Agg")
@@ -21,7 +21,10 @@ import matplotlib.lines as mlines
 import networkx as nx
 import numpy as np
 
-from src.patent_opportunity_analysis.utils.paths import RAG_ENRICHED_JSON
+from src.patent_opportunity_analysis.utils.paths import (
+    RAG_ENRICHED_JSON,
+    get_run_merged_rag_enriched_json,
+)
 
 COLOR_NEW       = "#D32F2F"
 COLOR_MARGINAL  = "#EF6C00"
@@ -310,16 +313,27 @@ def draw_opportunity_network(
     ax.margins(0.08)
 
 
+def _resolve_input_path(input_path: Optional[Path] = None, run_id: Optional[str] = None) -> Path:
+    """优先使用显式输入，其次使用当前 run 的 03_merged_rag，最后回退到全局兼容路径。"""
+    if input_path is not None:
+        return input_path
+    if run_id:
+        return get_run_merged_rag_enriched_json(run_id)
+    return RAG_ENRICHED_JSON
+
+
 def main():
     parser = argparse.ArgumentParser(description="绘制技术机会子网络图")
-    parser.add_argument("--input", type=Path,
-                        default=RAG_ENRICHED_JSON)
+    parser.add_argument("--input", type=Path, default=None)
+    parser.add_argument("--run-id", type=str, default=None)
     parser.add_argument("--ranks", type=int, nargs="+", default=[1, 2, 3])
     parser.add_argument("--output-dir", type=Path, default=None)
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
 
-    with open(args.input, "r", encoding="utf-8") as f:
+    input_path = _resolve_input_path(args.input, args.run_id)
+
+    with open(input_path, "r", encoding="utf-8") as f:
         all_opps = json.load(f)
 
     opp_map = {o["opportunity_rank"]: o for o in all_opps}

@@ -41,6 +41,11 @@ from src.patent_opportunity_analysis.feature_registry import FEATURE_REGISTRY
 from src.patent_opportunity_analysis import aco_search as _aco_search
 
 
+def _resolve_feature_names(objective_coefficients: Dict[str, float]) -> List[str]:
+    """解析富化所需特征；当目标系数为空时回退到默认特征注册表。"""
+    return list(objective_coefficients.keys()) or list(FEATURE_REGISTRY.keys())
+
+
 def load_all_candidates(run_dir: Path) -> List[Dict[str, Any]]:
     """从 run_dir 下所有 03_aco* 目录加载 aco_candidates.json 并合并。"""
     all_candidates: List[Dict[str, Any]] = []
@@ -177,7 +182,7 @@ def main() -> int:
         regression_meta = load_metadata(regression_meta_path)
         decay_factor = regression_meta.get("decay_factor")
 
-    feature_names = list(objective_coefficients.keys()) or list(FEATURE_REGISTRY.keys())
+    feature_names = _resolve_feature_names(objective_coefficients)
     hdkn_cache = build_hdkn_subnetwork_feature_cache(
         HDKN,
         hist_end_year=hist_end_year,
