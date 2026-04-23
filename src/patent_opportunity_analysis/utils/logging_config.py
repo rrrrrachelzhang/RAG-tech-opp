@@ -9,6 +9,8 @@ from loguru import logger
 import sys
 from typing import Optional
 
+from .paths import LOGS_DIR
+
 def setup_project_logging(
     log_dir: Optional[Path] = None,
     log_level: str = "INFO",
@@ -43,8 +45,8 @@ def setup_project_logging(
     # 文件输出
     if enable_file:
         if log_dir is None:
-            log_dir = Path(__file__).resolve().parent.parent.parent / "logs"
-        log_dir.mkdir(exist_ok=True)
+            log_dir = LOGS_DIR
+        log_dir.mkdir(parents=True, exist_ok=True)
         
         # 详细日志文件（包含DEBUG）
         debug_log_file = log_dir / "pipeline_debug_{time:YYYY-MM-DD}.log"
@@ -100,4 +102,3 @@ def log_function_call(func):
             raise
     
     return wrapper
-

@@ -4,12 +4,13 @@
 用于缓存NLP处理结果，避免重复计算
 """
 
-from functools import lru_cache
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 import hashlib
 import pickle
 from pathlib import Path
 from loguru import logger
+
+from .paths import NLP_CACHE_DIR
 
 class NLPCache:
     """NLP处理结果缓存"""
@@ -24,7 +25,7 @@ class NLPCache:
         """
         self.cache_dir = cache_dir
         self.max_size = max_size
-        self.memory_cache: Dict[str, any] = {}
+        self.memory_cache: Dict[str, Any] = {}
         
         if cache_dir:
             cache_dir.mkdir(parents=True, exist_ok=True)
@@ -44,7 +45,7 @@ class NLPCache:
             return f"patent_{patent_id}"
         return hashlib.md5(text.encode('utf-8')).hexdigest()
     
-    def get(self, text: str, patent_id: str = None) -> Optional[any]:
+    def get(self, text: str, patent_id: str = None) -> Optional[Any]:
         """获取缓存结果"""
         key = self._get_key(text, patent_id)
         
@@ -68,7 +69,7 @@ class NLPCache:
         
         return None
     
-    def set(self, text: str, value: any, patent_id: str = None):
+    def set(self, text: str, value: Any, patent_id: str = None):
         """设置缓存结果"""
         key = self._get_key(text, patent_id)
         
@@ -116,6 +117,6 @@ def get_nlp_cache(cache_dir: Optional[Path] = None) -> NLPCache:
     global _global_nlp_cache
     if _global_nlp_cache is None:
         if cache_dir is None:
-            cache_dir = Path(__file__).resolve().parent.parent.parent / "cache" / "nlp"
+            cache_dir = NLP_CACHE_DIR
         _global_nlp_cache = NLPCache(cache_dir)
     return _global_nlp_cache

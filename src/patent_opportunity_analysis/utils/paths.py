@@ -23,6 +23,8 @@ MODELS_DIR = OUTPUTS_DIR / "models"
 MODELS_CACHE_DIR = MODELS_DIR / "cache"  # HDKN统计缓存目录
 LOGS_DIR = OUTPUTS_DIR / "logs"
 CACHE_DIR = OUTPUTS_DIR / "cache"
+NLP_CACHE_DIR = CACHE_DIR / "nlp"
+MATPLOTLIB_CACHE_DIR = CACHE_DIR / "matplotlib"
 REPORTS_DIR = OUTPUTS_DIR / "reports"
 
 # 常用文件路径
@@ -35,11 +37,33 @@ RAG_CONFIG_FILE = CONFIG_DIR / "rag_config.yaml"
 RAG_DATA_DIR = DATA_PROCESSED_DIR / "rag"
 RAG_ENRICHED_JSON = RAG_DATA_DIR / "aco_merged_top30_enriched.json"
 RAG_CANDIDATES_JSON = RAG_DATA_DIR / "aco_merged_top30_candidates.json"
+RUN_MERGED_RAG_DIRNAME = "03_merged_rag"
 
 # 运行目录（分步式Pipeline）
 RUNS_DIR = OUTPUTS_DIR / "runs"
 
+
+def get_run_merged_rag_dir(run_id: str) -> Path:
+    """返回 run 内合并 RAG 数据目录。"""
+    return RUNS_DIR / run_id / RUN_MERGED_RAG_DIRNAME
+
+
+def get_run_merged_rag_enriched_json(run_id: str) -> Path:
+    """返回 run 内合并后的富化子网 JSON 路径。"""
+    return get_run_merged_rag_dir(run_id) / "aco_merged_top30_enriched.json"
+
+
+def get_run_merged_rag_candidates_json(run_id: str) -> Path:
+    """返回 run 内合并后的候选列表 JSON 路径。"""
+    return get_run_merged_rag_dir(run_id) / "aco_merged_top30_candidates.json"
+
+
+def get_run_merged_rag_summary_json(run_id: str) -> Path:
+    """返回 run 内合并摘要 JSON 路径。"""
+    return get_run_merged_rag_dir(run_id) / "merge_summary.json"
+
 # 确保必要的目录存在
 for dir_path in [DATA_RAW_DIR, DATA_INTERIM_DIR, DATA_PROCESSED_DIR, 
-                 CONFIG_DIR, MODELS_DIR, MODELS_CACHE_DIR, LOGS_DIR, CACHE_DIR, REPORTS_DIR, RUNS_DIR]:
+                 CONFIG_DIR, MODELS_DIR, MODELS_CACHE_DIR, LOGS_DIR, CACHE_DIR,
+                 NLP_CACHE_DIR, MATPLOTLIB_CACHE_DIR, REPORTS_DIR, RUNS_DIR]:
     dir_path.mkdir(parents=True, exist_ok=True)

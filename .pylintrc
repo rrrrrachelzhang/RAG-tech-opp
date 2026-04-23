@@ -1,0 +1,16 @@
+[MASTER]
+# 使用系统 Python
+init-hook='import sys; sys.path.insert(0, "/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages")'
+
+[MESSAGES CONTROL]
+# 禁用导入错误警告（包已安装但 Pylint 可能找不到）
+disable=import-error,no-member,unused-argument,unused-variable,bare-except,unused-import
+
+[BASIC]
+# 基本设置
+good-names=i,j,k,ex,Run,_,id,np,nx,DKN,subg,G,x,n,u,v,d,nbr,w,ec
+
+[FORMAT]
+# 代码格式设置
+max-line-length=120
+

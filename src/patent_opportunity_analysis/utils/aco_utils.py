@@ -7,6 +7,8 @@ ACO算法工具函数
 import yaml
 from pathlib import Path
 from typing import Dict, List, Optional
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
@@ -287,4 +289,3 @@ def visualize_subnetwork(
     plt.close()
     
     logger.success(f"子网络可视化已保存到: {output_path}")
-

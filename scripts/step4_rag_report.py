@@ -3,15 +3,15 @@
 Step4: 基于 RAG 生成技术机会分析报告
 
 功能：
-1. 读取合并后的富化子网 JSON（默认 data/processed/rag/aco_merged_top30_enriched.json）
+1. 优先读取当前 run 的合并后富化子网 JSON
 2. 调用 DeepSeek API 为每个技术机会生成结构化 Markdown 报告
 3. 保存报告和 metadata
 
 输入查找优先级：
-  --input-json > data/processed/rag/aco_merged_top30_enriched.json > outputs/runs/<run_id>/03_aco/
+  --input-json > outputs/runs/<run_id>/03_merged_rag/ > outputs/runs/<run_id>/03_aco/ > data/processed/rag/
 
 运行方式：
-    # 使用默认输入（data/processed/rag/），输出到 run 目录
+    # 使用当前 run 的默认输入，输出到 run 目录
     python scripts/step4_rag_report.py --run-id <run_id>
 
     # 直接指定输入 JSON
@@ -77,20 +77,20 @@ def _resolve_input_json(
 
     优先级：
       1. 显式 --input-json 参数
-      2. data/processed/rag/aco_merged_top30_enriched.json（合并后的默认路径）
+      2. outputs/runs/<run_id>/03_merged_rag/aco_merged_top30_enriched.json
       3. outputs/runs/<run_id>/03_aco/aco_topk_enriched.json（单次运行产物）
+      4. data/processed/rag/aco_merged_top30_enriched.json（兼容历史全局路径）
     """
     if input_json is not None:
         if input_json.exists():
             return input_json
         raise FileNotFoundError(f"指定的输入文件不存在: {input_json}")
 
-    if RAG_ENRICHED_JSON.exists():
-        return RAG_ENRICHED_JSON
-
     if run_id:
         run_dir = get_run_dir(run_id)
+        merged_rag_json = run_dir / "03_merged_rag" / "aco_merged_top30_enriched.json"
         candidates = [
+            merged_rag_json,
             run_dir / "03_aco" / "aco_topk_enriched.json",
             run_dir / "03_aco" / "aco_topk.json",
         ]
@@ -98,8 +98,12 @@ def _resolve_input_json(
             if p.exists():
                 return p
 
+    if RAG_ENRICHED_JSON.exists():
+        return RAG_ENRICHED_JSON
+
     hint_paths = [str(RAG_ENRICHED_JSON)]
     if run_id:
+        hint_paths.insert(0, str(get_run_dir(run_id) / "03_merged_rag" / "aco_merged_top30_enriched.json"))
         hint_paths.append(str(get_run_dir(run_id) / "03_aco" / "aco_topk_enriched.json"))
     raise FileNotFoundError(
         "未找到输入 JSON。已查找路径:\n  - "
@@ -327,7 +331,7 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=f"""
 示例:
-  # 使用默认输入（data/processed/rag/），输出到 run 目录
+  # 使用当前 run 的默认输入，输出到 run 目录
   python scripts/step4_rag_report.py --run-id 20260331_195849_d009849ba_h2022
 
   # 仅生成 rank=1 的报告

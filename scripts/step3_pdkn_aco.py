@@ -17,7 +17,6 @@ import argparse
 from pathlib import Path
 from datetime import datetime
 import json
-import yaml
 
 project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(project_root))
@@ -29,6 +28,8 @@ import pandas as pd
 
 from src.patent_opportunity_analysis import config as _config
 from src.patent_opportunity_analysis import aco_search as _aco_search
+from src.patent_opportunity_analysis.feature_registry import FEATURE_REGISTRY
+from src.patent_opportunity_analysis.utils.aco_utils import load_aco_config
 from src.patent_opportunity_analysis.utils.paths import ACO_CONFIG_FILE, RAW_PATENT_FILE
 from src.patent_opportunity_analysis.utils.network_io import (
     load_dkn, load_metadata, save_metadata, compute_data_hash, compute_file_hash
@@ -46,16 +47,6 @@ aco_search_opportunities = _aco_search.aco_search_opportunities
 HIST_END_YEAR = _config.HIST_END_YEAR
 SUBNETWORK_SIZE = _config.SUBNETWORK_SIZE
 TOP_K_OPPORTUNITIES = _config.TOP_K_OPPORTUNITIES
-
-
-def load_aco_config(config_file: Path) -> dict:
-    """加载ACO配置文件"""
-    if config_file.exists():
-        with open(config_file, 'r', encoding='utf-8') as f:
-            config = yaml.safe_load(f) or {}
-        return config
-    return {}
-
 
 def step3_pdkn_aco(
     run_id: str,
@@ -293,7 +284,7 @@ def step3_pdkn_aco(
         logger.info("\n📝 生成富化子网 JSON ...")
 
         # 构建 HDKN 特征缓存（与 ACO evaluate 同口径）
-        feature_names = list(objective_coefficients.keys())
+        feature_names = list(objective_coefficients.keys()) or list(FEATURE_REGISTRY.keys())
         hdkn_cache = build_hdkn_subnetwork_feature_cache(
             HDKN,
             hist_end_year=hist_end_year,

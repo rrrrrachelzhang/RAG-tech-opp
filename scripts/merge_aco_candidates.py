@@ -20,11 +20,18 @@ init_script()
 
 from loguru import logger
 
-from src.patent_opportunity_analysis.utils.paths import RAW_PATENT_FILE, DATA_PROCESSED_DIR
+from src.patent_opportunity_analysis.utils.paths import (
+    RAW_PATENT_FILE,
+    RAG_DATA_DIR,
+    get_run_merged_rag_candidates_json,
+    get_run_merged_rag_dir,
+    get_run_merged_rag_enriched_json,
+    get_run_merged_rag_summary_json,
+)
 from src.patent_opportunity_analysis.utils.network_io import (
     load_dkn, load_metadata,
 )
-from src.patent_opportunity_analysis.utils.run_utils import get_run_dir
+from src.patent_opportunity_analysis.utils.run_utils import get_run_dir, ensure_run_dirs
 from src.patent_opportunity_analysis.aco_to_rag import (
     enrich_opportunities, build_patent_lookup, build_stem_to_originals,
 )
@@ -98,6 +105,11 @@ def main() -> int:
     parser.add_argument("--top-n", type=int, default=30, help="选取前 N 名（默认 30）")
     parser.add_argument("--overlap", type=float, default=0.8, help="节点重叠上限（默认 0.8）")
     parser.add_argument("--patents-csv", type=Path, default=None)
+    parser.add_argument(
+        "--export-global-rag",
+        action="store_true",
+        help="额外导出一份到 data/processed/rag/（默认仅写入当前 run）",
+    )
     args = parser.parse_args()
 
     run_dir = get_run_dir(args.run_id)
@@ -136,7 +148,7 @@ def main() -> int:
     logger.info("=" * 70)
 
     networks_dir = run_dir / "01_networks"
-    regression_dir = run_dir / "02_regression_workflow"
+    regression_dir = ensure_run_dirs(run_dir)["regression_dir"]
 
     pdkn_path = networks_dir / "pdkn.pkl.gz"
     hdkn_path = networks_dir / "hdkn.pkl.gz"
@@ -200,15 +212,15 @@ def main() -> int:
     logger.info("💾 Step D: 保存结果")
     logger.info("=" * 70)
 
-    out_dir = DATA_PROCESSED_DIR / "rag"
+    out_dir = get_run_merged_rag_dir(args.run_id)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    enriched_path = out_dir / "aco_merged_top30_enriched.json"
+    enriched_path = get_run_merged_rag_enriched_json(args.run_id)
     with open(enriched_path, "w", encoding="utf-8") as f:
         json.dump(enriched, f, indent=2, ensure_ascii=False, default=str)
     logger.success(f"富化 JSON 已保存: {enriched_path}")
 
-    candidates_path = out_dir / "aco_merged_top30_candidates.json"
+    candidates_path = get_run_merged_rag_candidates_json(args.run_id)
     slim = []
     for i, c in enumerate(top_candidates, 1):
         slim.append({
@@ -222,7 +234,7 @@ def main() -> int:
         json.dump(slim, f, indent=2, ensure_ascii=False)
     logger.success(f"候选列表已保存: {candidates_path}")
 
-    summary_path = out_dir / "merge_summary.json"
+    summary_path = get_run_merged_rag_summary_json(args.run_id)
     summary = {
         "run_id": args.run_id,
         "total_candidates_loaded": len(all_cands),
@@ -243,6 +255,19 @@ def main() -> int:
     with open(summary_path, "w", encoding="utf-8") as f:
         json.dump(summary, f, indent=2, ensure_ascii=False)
     logger.success(f"合并摘要已保存: {summary_path}")
+
+    if args.export_global_rag:
+        RAG_DATA_DIR.mkdir(parents=True, exist_ok=True)
+        global_enriched_path = RAG_DATA_DIR / enriched_path.name
+        global_candidates_path = RAG_DATA_DIR / candidates_path.name
+        global_summary_path = RAG_DATA_DIR / summary_path.name
+        for src_path, dst_path in [
+            (enriched_path, global_enriched_path),
+            (candidates_path, global_candidates_path),
+            (summary_path, global_summary_path),
+        ]:
+            dst_path.write_text(src_path.read_text(encoding="utf-8"), encoding="utf-8")
+        logger.success(f"已额外导出到全局目录: {RAG_DATA_DIR}")
 
     logger.info("\n📊 Top-30 概览:")
     for i, c in enumerate(top_candidates, 1):
