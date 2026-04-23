@@ -82,19 +82,10 @@ def ensure_run_dirs(run_dir: Path) -> dict:
     Returns:
         包含各步骤目录路径的字典
     """
-    # 回归目录：优先使用 02_regression_workflow（多轮回归工作流产物），
-    # 若不存在则回退到 02_regression（旧版单步回归产物）
-    regression_workflow_dir = run_dir / "02_regression_workflow"
-    regression_legacy_dir = run_dir / "02_regression"
-    if regression_workflow_dir.exists():
-        regression_dir = regression_workflow_dir
-    else:
-        regression_dir = regression_legacy_dir
-
     dirs = {
         "run_dir": run_dir,
         "networks_dir": run_dir / "01_networks",
-        "regression_dir": regression_dir,
+        "regression_dir": run_dir / "02_regression",
         "aco_dir": run_dir / "03_aco",
         "rag_dir": run_dir / "04_rag_reports",
     }

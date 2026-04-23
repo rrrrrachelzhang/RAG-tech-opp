@@ -146,7 +146,7 @@ outputs/runs/<run_id>/
 │   ├── hdkn.pkl.gz                    # 历史知识网络
 │   ├── pdkn.pkl.gz                    # 预测期知识网络
 │   └── networks_meta.json
-├── 02_regression_workflow/             # 4-Run 回归工作流产物
+├── 02_regression/                      # 回归结果与工作流产物
 │   ├── regression_features.csv
 │   ├── run1_results.json              # Alpha Selection 结果
 │   ├── run2_*.pkl / .json / .txt      # 全模型 + 共线性

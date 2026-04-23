@@ -529,201 +529,22 @@ def run_full_pipeline(
     Returns:
         包含所有结果的字典
     """
-    # 重置计时器
-    global_timer.timings.clear()
-    
-    try:
-        # 确定数据文件路径
-        if data_file is None:
-            data_file = Path(RAW_PATENT_FILE)
-            if not data_file.exists():
-                # 尝试大写扩展名
-                data_file = data_file.parent / "raw_patents.CSV"
-        
-        if not data_file.exists():
-            raise DataLoadingError(f"找不到数据文件: {data_file}")
-        
-        # 确定输出目录
-        if output_dir is None:
-            output_dir = MODELS_DIR
-        output_dir.mkdir(exist_ok=True)
-        
-        logger.info("=" * 60)
-        logger.info("🚀 开始运行完整流程")
-        logger.info("=" * 60)
-        
-        # 1. 加载数据
-        logger.info("\n📂 步骤1: 加载专利数据...")
-        with global_timer.time_block("数据加载"):
-            patents = load_patents_from_csv(data_file, limit=limit, smart_select=True)
-        
-        # 2. 构建DKN
-        logger.info("\n🔗 步骤2: 构建DKN...")
-        try:
-            with global_timer.time_block("DKN构建"):
-                HDKN, PDKN = build_dkns(patents, HIST_END_YEAR)
-            logger.success(f"HDKN: {HDKN.number_of_nodes()} 个节点, {HDKN.number_of_edges()} 条边")
-            logger.success(f"PDKN: {PDKN.number_of_nodes()} 个节点, {PDKN.number_of_edges()} 条边")
-        except Exception as e:
-            logger.error(f"DKN构建失败: {e}")
-            raise DKNBuildError(f"DKN构建过程出错: {e}") from e
-        
-        # 3. 特征提取
-        logger.info("\n📊 步骤3: 提取特征...")
-        with global_timer.time_block("特征提取"):
-            features = extract_features_for_regression(HDKN, PDKN, patents)
-        
-        # 4. 回归模型
-        logger.info("\n📈 步骤4: 训练回归模型...")
-        model = None
-        if len(features) >= 5:
-            # 数据量检查
-            if len(features) < 30:
-                logger.warning(f"⚠️  样本数量较少（{len(features)}条），回归模型可能不够稳定。")
-                logger.warning("   建议至少使用30-50条样本进行回归分析。")
-                logger.warning("   当前结果仅供参考，建议增加数据量以获得更可靠的模型。")
-            elif len(features) < 50:
-                logger.info(f"ℹ️  样本数量为 {len(features)} 条，建议使用更多数据以提高模型稳定性。")
-            
-            try:
-                with global_timer.time_block("回归模型训练"):
-                    df = build_reg_df(features)
+    if output_dir is not None:
+        raise ValueError(
+            "run_full_pipeline 不再支持自定义 output_dir。"
+            "当前统一写入 outputs/runs/<run_id>/...；如需控制目录，请直接调用分步脚本。"
+        )
 
-                    # 检查特征分布
-                    logger.info(f"特征统计: New_n={df['New_n'].sum()}, Min_pn范围=[{df['Min_pn'].min()}, {df['Min_pn'].max()}], "
-                              f"Con_e范围=[{df['Con_e'].min():.4f}, {df['Con_e'].max():.4f}], "
-                              f"Eigen范围=[{df['Eigen'].min():.4f}, {df['Eigen'].max():.4f}], "
-                              f"Back_cite范围=[{df['Back_cite'].min()}, {df['Back_cite'].max()}], "
-                              f"Assignee={df['Assignee'].sum()}, Total_pat范围=[{df['Total_pat'].min()}, {df['Total_pat'].max()}]")
+    from scripts.run_all import run_all_pipeline
 
-                    # 根据样本量选择模型类型
-                    if len(df) < 30:
-                        logger.info("样本量小，使用OLS回归模型")
-                        from .utils.regression_analysis import generate_full_regression_analysis
-                        import statsmodels.formula.api as smf
-
-                        formula = "Cited ~ New_n + Min_pn + Con_e + Eigen + Back_cite + Assignee + Total_pat"
-                        model = smf.ols(formula=formula, data=df)
-                        result = model.fit()
-                        logger.info("OLS模型拟合完成")
-                        logger.info(f"\n{result.summary()}")
-
-                        # 生成分析报告
-                        if output_dir:
-                            try:
-                                analysis_results = generate_full_regression_analysis(
-                                    result, output_dir, model_name="regression_model_OLS"
-                                )
-                                logger.success("OLS回归分析报告和诊断图已生成")
-                            except Exception as e:
-                                logger.warning(f"生成OLS回归分析时出错: {e}")
-
-                        model = result
-                    else:
-                        model = fit_nb(df, generate_analysis=True, output_dir=output_dir)
-                    model_path = output_dir / "regression_model.pkl"
-                    save_model(model, model_path)
-                    logger.success("回归模型已训练并保存")
-            except Exception as e:
-                logger.error(f"回归模型训练失败: {e}")
-                logger.warning("ACO 需要回归系数，将无法执行 ACO 搜索")
-        else:
-            logger.warning(f"特征数量太少（{len(features)}条），跳过回归模型训练与 ACO")
-        
-        # 5. ACO搜索（线性目标 Z=ΣβX，与 Step2/Step3 一致）
-        logger.info("\n🔍 步骤5: ACO搜索技术机会...")
-        opportunities = []
-        if model is None:
-            logger.warning("⚠️  无回归模型，跳过 ACO（需 NB/OLS 系数生成 objective_coefficients）")
-        else:
-            try:
-                objective_coefficients = extract_nb_significant_coefficients(model)
-                if not objective_coefficients:
-                    logger.warning("⚠️  无显著回归项，objective 系数为空，ACO 的 Z 将恒为 0")
-                logger.info("✅ 使用 NB/回归显著项线性组合作为 ACO 目标函数（原始尺度特征）")
-                with global_timer.time_block("ACO搜索"):
-                    opportunities = aco_search_opportunities(
-                        HDKN,
-                        PDKN,
-                        SUBNETWORK_SIZE,
-                        TOP_K_OPPORTUNITIES,
-                        output_dir=output_dir,
-                        objective_coefficients=objective_coefficients,
-                        override_coefficients=None,
-                        hist_end_year=HIST_END_YEAR,
-                        pdkn_ref_year=int(PDKN.ref_year),
-                        decay_factor=getattr(_config, "DECAY_FACTOR", None),
-                    )
-                logger.success(f"找到 {len(opportunities)} 个技术机会")
-            except Exception as e:
-                logger.error(f"ACO搜索失败: {e}")
-                raise ACOSearchError(f"ACO搜索过程出错: {e}") from e
-        
-        # 保存机会
-        if opportunities:
-            opp_df = pd.DataFrame([
-                {
-                    'rank': i + 1,
-                    'nodes': ', '.join(opp['nodes']),
-                    'score': opp['score'],
-                    'size': opp['size']
-                }
-                for i, opp in enumerate(opportunities)
-            ])
-            opp_path = output_dir / "opportunities.csv"
-            opp_df.to_csv(opp_path, index=False)
-            logger.success(f"机会已保存到: {opp_path}")
-        
-        # 生成输出文件
-        logger.info("\n📄 生成输出文件...")
-        try:
-            # JSON输出
-            from .utils import report_generator as _report_generator
-            generate_json_output = _report_generator.generate_json_output
-            generate_pdf_report = _report_generator.generate_pdf_report
-            
-            results_dict = {
-                'patents': patents,
-                'HDKN': HDKN,
-                'PDKN': PDKN,
-                'features': features,
-                'model': model,
-                'opportunities': opportunities
-            }
-            
-            json_path = output_dir / "results.json"
-            generate_json_output(results_dict, json_path)
-            
-            # PDF报告（使用reports目录中的文件）
-            reports_dir = REPORTS_DIR
-            reports_dir.mkdir(exist_ok=True)
-            
-            regression_report_path = reports_dir / "regression_model_report.md"
-            diagnostics_plot_path = reports_dir / "regression_diagnostics.png"
-            convergence_plot_path = reports_dir / "aco_progress.png"
-            
-            pdf_path = reports_dir / "final_report.pdf"
-            generate_pdf_report(
-                results_dict,
-                pdf_path,
-                regression_report_path if regression_report_path.exists() else None,
-                diagnostics_plot_path if diagnostics_plot_path.exists() else None,
-                convergence_plot_path if convergence_plot_path.exists() else None
-            )
-        except Exception as e:
-            logger.warning(f"生成输出文件时出错: {e}")
-        
-        # 打印时间统计
-        global_timer.print_summary()
-        
-        logger.info("\n" + "=" * 60)
-        logger.success("✅ 流程完成！")
-        logger.info("=" * 60)
-        
-        return results_dict
-    except Exception as e:
-        logger.exception("流程执行失败")
-        raise
+    logger.warning(
+        "run_full_pipeline 已降级为兼容入口，内部转发到 scripts.run_all.run_all_pipeline。"
+    )
+    return run_all_pipeline(
+        patents_csv=data_file,
+        limit=limit,
+        resume=True,
+    )
 
 def main():
     """
@@ -734,65 +555,76 @@ def main():
         int: 退出码（0表示成功，1表示失败）
     """
     import argparse
-    import sys
     from .utils.logging_config import setup_project_logging
+    from scripts.run_all import run_all_pipeline
     
     # 初始化日志系统
     setup_project_logging()
     
     # 解析命令行参数
     parser = argparse.ArgumentParser(
-        description="专利技术机会分析系统",
+        description="专利技术机会分析系统（兼容入口，内部转发到分步编排器）",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 示例:
-  patent-analysis                    # 使用默认配置（500条数据）
+  patent-analysis                    # 使用默认配置运行完整分步流程
   patent-analysis --limit 1000       # 处理1000条数据
-  patent-analysis --limit 50         # 快速测试（50条数据）
+  patent-analysis --run-id exp_001   # 指定 run_id
         """
     )
     parser.add_argument(
         '--limit',
         type=int,
-        default=500,
-        help='限制处理的专利数量（默认: 500）'
+        default=None,
+        help='限制处理的专利数量'
     )
     parser.add_argument(
         '--data-file',
         type=str,
         default=None,
-        help='数据文件路径（默认: 使用配置文件中的路径）'
+        help='数据文件路径（兼容旧参数，映射到 patents_csv）'
     )
     parser.add_argument(
-        '--output-dir',
+        '--run-id',
         type=str,
         default=None,
-        help='输出目录（默认: outputs/models/）'
+        help='运行 ID'
+    )
+    parser.add_argument(
+        '--hist-end-year',
+        type=int,
+        default=None,
+        help='历史截止年份'
+    )
+    parser.add_argument(
+        '--max-year',
+        type=int,
+        default=None,
+        help='最大年份'
+    )
+    parser.add_argument(
+        '--skip-step4',
+        action='store_true',
+        help='跳过 Step4'
     )
     
     args = parser.parse_args()
     
-    # 转换路径
     data_file = Path(args.data_file) if args.data_file else None
-    output_dir = Path(args.output_dir) if args.output_dir else None
-    
-    # 运行完整流程
     try:
-        results = run_full_pipeline(
-            data_file=data_file,
+        results = run_all_pipeline(
+            patents_csv=data_file,
             limit=args.limit,
-            output_dir=output_dir
+            run_id=args.run_id,
+            hist_end_year=args.hist_end_year,
+            max_year=args.max_year,
+            skip_step4=args.skip_step4,
         )
-        logger.success(f"\n流程执行完成，找到 {len(results['opportunities'])} 个技术机会")
+        logger.success(f"\n流程执行完成，运行目录: {results['run_dir']}")
         return 0
     except Exception:
         logger.exception("流程执行失败")
         return 1
 
 if __name__ == "__main__":
-    # 如果直接运行此文件，执行完整流程
-    from .utils.logging_config import setup_project_logging
-    setup_project_logging()
-    
-    results = run_full_pipeline(limit=500)
-    logger.success(f"\n流程执行完成，找到 {len(results['opportunities'])} 个技术机会")
+    raise SystemExit(main())

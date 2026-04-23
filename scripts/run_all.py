@@ -126,7 +126,7 @@ def run_all_pipeline(
     except Exception as e:
         if resume and "已存在且metadata一致" in str(e):
             logger.info("ℹ️  Step2产物已存在，跳过")
-            results["regression_dir"] = run_dir / "02_regression"
+            results["regression_dir"] = ensure_run_dirs(run_dir)["regression_dir"]
         else:
             logger.exception("Step2 执行失败")
             raise

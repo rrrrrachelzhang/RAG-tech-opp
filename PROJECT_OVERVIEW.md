@@ -391,7 +391,7 @@ ACO 搜索使 Z 最大化的子网——同时具备高新颖性（New_e 大，�
 │           └── merge_summary.json               # 合并摘要
 ├── outputs/runs/<run_id>/               # 运行产物（按 run_id 隔离）
 │   ├── 01_networks/                    # Step1: HDKN + PDKN
-│   ├── 02_regression_workflow/         # Step2: 4-Run 回归结果与报告
+│   ├── 02_regression/                  # Step2: 回归结果与报告
 │   ├── 03_aco*/                        # Step3: 各配置 ACO 搜索结果
 │   └── 04_rag_reports/                 # Step4: RAG 分析报告
 │       ├── rank1_*.md                  # 各 rank 的 Markdown 报告

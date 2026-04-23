@@ -23,6 +23,8 @@ from src.patent_opportunity_analysis.utils.network_io import load_dkn, load_meta
 from scripts.step1_build_networks import step1_build_networks
 from scripts.step2_hdkn_regression import step2_hdkn_regression
 from scripts.step3_pdkn_aco import step3_pdkn_aco
+from scripts import merge_aco_candidates as merge_module
+from scripts import step4_rag_report as step4_module
 
 
 @pytest.fixture
@@ -140,6 +142,58 @@ def test_step3_uses_pdkn_not_builds_network(test_run_id, cleanup_run_dir):
     assert meta["step_name"] == "03_aco"
     assert "upstream_artifacts" in meta
     assert "networks_meta_hash" in meta["upstream_artifacts"]
+
+
+def test_step4_prefers_run_local_merged_rag_artifact(test_run_id, cleanup_run_dir, monkeypatch):
+    """测试 Step4 优先读取当前 run 的 merge 产物，而不是全局 RAG 文件。"""
+    if not RAW_PATENT_TEST_FILE.exists():
+        pytest.skip(f"测试数据文件不存在: {RAW_PATENT_TEST_FILE}")
+
+    step1_build_networks(
+        patents_csv=RAW_PATENT_TEST_FILE,
+        hist_end_year=2022,
+        run_id=test_run_id,
+        force=True,
+    )
+
+    step2_hdkn_regression(
+        run_id=test_run_id,
+        patents_csv=RAW_PATENT_TEST_FILE,
+        force=True,
+    )
+
+    step3_pdkn_aco(
+        run_id=test_run_id,
+        patents_csv=RAW_PATENT_TEST_FILE,
+        force=True,
+    )
+
+    argv_backup = sys.argv[:]
+    try:
+        sys.argv = [
+            "merge_aco_candidates.py",
+            "--run-id",
+            test_run_id,
+            "--top-n",
+            "5",
+            "--patents-csv",
+            str(RAW_PATENT_TEST_FILE),
+        ]
+        assert merge_module.main() == 0
+    finally:
+        sys.argv = argv_backup
+
+    run_dir = RUNS_DIR / test_run_id
+    merged_path = run_dir / "03_merged_rag" / "aco_merged_top30_enriched.json"
+    assert merged_path.exists()
+
+    global_rag_path = run_dir / "fake_global" / "aco_merged_top30_enriched.json"
+    global_rag_path.parent.mkdir(parents=True, exist_ok=True)
+    global_rag_path.write_text("[]", encoding="utf-8")
+    monkeypatch.setattr(step4_module, "RAG_ENRICHED_JSON", global_rag_path)
+
+    resolved = step4_module._resolve_input_json(run_id=test_run_id)
+    assert resolved == merged_path
 
 
 def test_resume_mechanism(test_run_id, cleanup_run_dir):

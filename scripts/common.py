@@ -318,7 +318,7 @@ def run_alpha_selection(
     logger.info(f"💾 结果已保存: {out_path}")
 
     # 加载 Step2 的 regression_meta 用于 LL 对比
-    step2_meta_path = run_dir / "02_regression" / "regression_meta.json"
+    step2_meta_path = ensure_run_dirs(run_dir)["regression_dir"] / "regression_meta.json"
     step2_meta = None
     if step2_meta_path.exists():
         try:

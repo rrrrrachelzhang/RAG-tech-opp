@@ -460,7 +460,7 @@ def _resolve_output_dir(run_id: str, output_dir: Optional[Path] = None) -> Path:
         output_dir.mkdir(parents=True, exist_ok=True)
         return output_dir
     run_dir = get_run_dir(run_id)
-    d = run_dir / "02_regression_workflow"
+    d = ensure_run_dirs(run_dir)["regression_dir"]
     d.mkdir(parents=True, exist_ok=True)
     return d
 
