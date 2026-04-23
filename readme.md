@@ -117,7 +117,7 @@ python scripts/step3_pdkn_aco.py --run-id <ID> --test-num-ants 500 --force
 python scripts/merge_aco_candidates.py --run-id <ID> --top-n 30 --overlap 0.8
 ```
 
-合并所有 ACO 运行的候选子网（960 条），去重 + 80% 节点重叠过滤，选出 Top-30 多样化子网。然后对每个子网进行富化：节点/边按 new/marginal/special/conventional 分类，匹配代表性专利，注入 Eigen 值和 is_marginal 标记。
+合并所有 ACO 运行的候选子网（960 条），去重 + 80% 节点重叠过滤，选出 Top-30 多样化子网。然后对每个子网进行富化：节点/边按 new/marginal/special/conventional 分类，匹配代表性专利，注入 Eigen 值和 is_marginal 标记。默认输出到 `outputs/runs/<ID>/03_merged_rag/`，仅在显式指定 `--export-global-rag` 时额外导出到 `data/processed/rag/`。
 
 ### Step4：RAG 报告生成
 
@@ -159,6 +159,10 @@ outputs/runs/<run_id>/
 │   ├── aco_topk_enriched.json
 │   ├── aco_meta.json
 │   └── reports/
+├── 03_merged_rag/                      # Step3.5: 当前 run 的合并/富化结果
+│   ├── aco_merged_top30_enriched.json
+│   ├── aco_merged_top30_candidates.json
+│   └── merge_summary.json
 └── 04_rag_reports/                     # RAG 分析报告
     ├── rank1_*.md                     # 各 rank 的 Markdown 报告
     └── rag_meta.json                  # 报告生成元数据
@@ -178,7 +182,7 @@ outputs/runs/<run_id>/
 │   │   ├── patents.csv              # 清洗后数据
 │   │   └── patents_excluded.csv     # 被排除记录
 │   ├── processed/
-│   │   └── rag/                     # Step3.5 产物
+│   │   └── rag/                     # 历史兼容导出目录（默认不写）
 │   │       ├── aco_merged_top30_enriched.json   # 富化子网 JSON
 │   │       ├── aco_merged_top30_candidates.json  # 精简候选列表
 │   │       └── merge_summary.json               # 合并摘要

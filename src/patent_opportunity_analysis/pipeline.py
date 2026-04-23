@@ -3,56 +3,31 @@
 from typing import List, Dict, Optional
 import pandas as pd
 from pathlib import Path
-import networkx as nx
-import numpy as np
 from tqdm import tqdm
 
-# 导入工具模块
-from .utils.timer import global_timer
 from .utils.errors import (
-    DataLoadingError, DKNBuildError, FeatureExtractionError,
-    RegressionModelError, ACOSearchError
+    DataLoadingError, FeatureExtractionError,
 )
 
 from loguru import logger
 
-# 导入核心模块
 from . import config as _config
 from . import patent_graph as _patent_graph
-from . import dkn_builder as _dkn_builder
 from . import feature_extraction as _feature_extraction
 from . import feature_registry as _feature_registry
 extract_title_subnetwork = _feature_extraction.extract_title_subnetwork
 from . import hdkn_stats as _hdkn_stats
 from . import nlp_utils as _nlp_utils
-from . import regression_model as _regression_model
-from . import aco_search as _aco_search
-from .utils.paths import MODELS_DIR, REPORTS_DIR
+from .utils.paths import RAW_PATENT_FILE as _RAW_PATENT_FILE
 
-RAW_PATENT_FILE = _config.RAW_PATENT_FILE
+RAW_PATENT_FILE = _RAW_PATENT_FILE
 HIST_END_YEAR = _config.HIST_END_YEAR
-SUBNETWORK_SIZE = _config.SUBNETWORK_SIZE
-TOP_K_OPPORTUNITIES = _config.TOP_K_OPPORTUNITIES
 
 PatentRecord = _patent_graph.PatentRecord
-build_patent_graph = _patent_graph.build_patent_graph
-build_dkns = _dkn_builder.build_dkns
-# 保留旧函数以兼容性（但推荐使用新的特征注册表接口）
-compute_new_flags = _feature_extraction.compute_new_flags
-compute_min_pn = _feature_extraction.compute_min_pn
-compute_conventionality = _feature_extraction.compute_conventionality
-compute_eigen_centrality = _feature_extraction.compute_eigen_centrality
-compute_constraint_feature = _feature_extraction.compute_constraint_feature
-get_hdkn_constraint_map = _feature_extraction.get_hdkn_constraint_map
 build_or_load_hdkn_stats = _hdkn_stats.build_or_load_hdkn_stats
 compute_features_for_subnetwork = _feature_registry.compute_features_for_subnetwork
 FEATURE_REGISTRY = _feature_registry.FEATURE_REGISTRY
 NLPProcessor = _nlp_utils.NLPProcessor
-build_reg_df = _regression_model.build_reg_df
-fit_nb = _regression_model.fit_nb
-save_model = _regression_model.save_model
-extract_nb_significant_coefficients = _regression_model.extract_nb_significant_coefficients
-aco_search_opportunities = _aco_search.aco_search_opportunities
 
 # 常见 2 字母国家/地区代码（用于区分 "Name,CC" 个人格式 vs "Org,City,State,CC" 机构地址）
 _COUNTRY_CODES = frozenset({
@@ -519,15 +494,15 @@ def run_full_pipeline(
     output_dir: Path = None
 ) -> Dict:
     """
-    运行完整的专利分析流程
+    兼容旧入口，转发到分步编排器。
     
     Args:
         data_file: 数据文件路径，如果为None则使用配置中的路径
         limit: 限制加载的专利数量
-        output_dir: 输出目录，如果为None则使用项目根目录
+        output_dir: 旧参数，已不再支持
     
     Returns:
-        包含所有结果的字典
+        分步编排器的结果字典
     """
     if output_dir is not None:
         raise ValueError(

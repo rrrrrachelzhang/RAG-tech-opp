@@ -21,6 +21,8 @@ import matplotlib.lines as mlines
 import networkx as nx
 import numpy as np
 
+from src.patent_opportunity_analysis.utils.paths import RAG_ENRICHED_JSON
+
 COLOR_NEW       = "#D32F2F"
 COLOR_MARGINAL  = "#EF6C00"
 COLOR_MARGINAL_FILL = "#FFB74D"
@@ -311,7 +313,7 @@ def draw_opportunity_network(
 def main():
     parser = argparse.ArgumentParser(description="绘制技术机会子网络图")
     parser.add_argument("--input", type=Path,
-                        default=Path("data/processed/rag/aco_merged_top30_enriched.json"))
+                        default=RAG_ENRICHED_JSON)
     parser.add_argument("--ranks", type=int, nargs="+", default=[1, 2, 3])
     parser.add_argument("--output-dir", type=Path, default=None)
     parser.add_argument("--seed", type=int, default=42)

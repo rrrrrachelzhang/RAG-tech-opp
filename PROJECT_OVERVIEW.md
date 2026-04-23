@@ -270,7 +270,7 @@ ACO 搜索使 Z 最大化的子网——同时具备高新颖性（New_e 大，�
 - 全局标注 `novelty_sources`（新颖来源节点列表）和 `feasibility_anchors`（可行性锚点列表）
 - 计算 `z_score` 和 `feature_scores`（各特征分项得分）
 
-**产物**：`data/processed/rag/aco_merged_top30_enriched.json`——结构化 JSON，每个子网包含完整的分类信息、专利证据和评分，供 Step4 RAG 报告生成直接使用。
+**产物**：默认写入 `outputs/runs/<run_id>/03_merged_rag/aco_merged_top30_enriched.json`——结构化 JSON，每个子网包含完整的分类信息、专利证据和评分，供 Step4 RAG 报告生成直接使用。`data/processed/rag/` 仅作为兼容历史流程的显式导出位置。
 
 ---
 
@@ -385,7 +385,7 @@ ACO 搜索使 Z 最大化的子网——同时具备高新颖性（New_e 大，�
 │   │   ├── patents.csv                 # 清洗后标准数据（8620 条）
 │   │   └── patents_excluded.csv        # 被排除记录（附原因）
 │   └── processed/
-│       └── rag/                        # RAG 输入数据（Step3.5 产物）
+│       └── rag/                        # 历史兼容导出目录（默认不写）
 │           ├── aco_merged_top30_enriched.json   # 富化子网 JSON
 │           ├── aco_merged_top30_candidates.json  # 精简候选列表
 │           └── merge_summary.json               # 合并摘要
@@ -393,6 +393,7 @@ ACO 搜索使 Z 最大化的子网——同时具备高新颖性（New_e 大，�
 │   ├── 01_networks/                    # Step1: HDKN + PDKN
 │   ├── 02_regression/                  # Step2: 回归结果与报告
 │   ├── 03_aco*/                        # Step3: 各配置 ACO 搜索结果
+│   ├── 03_merged_rag/                  # Step3.5: 当前 run 的合并/富化结果
 │   └── 04_rag_reports/                 # Step4: RAG 分析报告
 │       ├── rank1_*.md                  # 各 rank 的 Markdown 报告
 │       └── rag_meta.json              # 报告生成元数据

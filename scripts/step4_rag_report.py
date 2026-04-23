@@ -8,7 +8,7 @@ Step4: 基于 RAG 生成技术机会分析报告
 3. 保存报告和 metadata
 
 输入查找优先级：
-  --input-json > outputs/runs/<run_id>/03_merged_rag/ > outputs/runs/<run_id>/03_aco/ > data/processed/rag/
+  --input-json > outputs/runs/<run_id>/03_merged_rag/ > outputs/runs/<run_id>/03_aco/ > data/processed/rag/（仅兼容回退）
 
 运行方式：
     # 使用当前 run 的默认输入，输出到 run 目录
@@ -337,14 +337,18 @@ def main():
   # 仅生成 rank=1 的报告
   python scripts/step4_rag_report.py --run-id 20260331_195849_d009849ba_h2022 --rank 1
 
-  # 直接指定输入和输出
-  python scripts/step4_rag_report.py --input-json data/processed/rag/aco_merged_top30_enriched.json \\
+  # 直接指定当前 run 的合并产物
+  python scripts/step4_rag_report.py \\
+      --input-json outputs/runs/<run_id>/03_merged_rag/aco_merged_top30_enriched.json \\
       --output-dir outputs/rag_reports
 
   # 强制重新生成
   python scripts/step4_rag_report.py --run-id 20260331_195849_d009849ba_h2022 --force
 
-默认输入: {RAG_ENRICHED_JSON}
+默认输入优先级:
+  1. outputs/runs/<run_id>/03_merged_rag/aco_merged_top30_enriched.json
+  2. outputs/runs/<run_id>/03_aco/aco_topk_enriched.json
+  3. data/processed/rag/aco_merged_top30_enriched.json（兼容回退）
 
 环境变量:
   DEEPSEEK_API_KEY    DeepSeek API 密钥（必填）
@@ -357,7 +361,7 @@ def main():
     )
     parser.add_argument(
         "--input-json", type=Path, default=None,
-        help=f"输入 JSON 路径（默认: {RAG_ENRICHED_JSON}）",
+        help="输入 JSON 路径（默认优先读取当前 run 的 03_merged_rag）",
     )
     parser.add_argument(
         "--output-dir", type=Path, default=None,

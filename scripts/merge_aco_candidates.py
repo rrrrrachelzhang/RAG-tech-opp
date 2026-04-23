@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 合并所有 ACO 搜索结果，按 Z 分数排序，以 80% 节点重叠上限进行多样性过滤，
-选出 Top-30 子网并生成富化 JSON，供 RAG 使用。
+选出 Top-30 子网并生成富化 JSON，默认写入当前 run 的 03_merged_rag，供 RAG 使用。
 
 运行方式：
     python scripts/merge_aco_candidates.py --run-id <run_id> [--top-n 30] [--overlap 0.8]
@@ -37,6 +37,7 @@ from src.patent_opportunity_analysis.aco_to_rag import (
 )
 from src.patent_opportunity_analysis.pipeline import load_patents_from_csv
 from src.patent_opportunity_analysis.hdkn_feature_cache import build_hdkn_subnetwork_feature_cache
+from src.patent_opportunity_analysis.feature_registry import FEATURE_REGISTRY
 from src.patent_opportunity_analysis import aco_search as _aco_search
 
 
@@ -100,7 +101,7 @@ def diversity_filter(
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="合并 ACO candidates 并生成富化 JSON")
+    parser = argparse.ArgumentParser(description="合并 ACO candidates 并生成富化 JSON（默认写入当前 run 的 03_merged_rag）")
     parser.add_argument("--run-id", required=True, help="运行 ID")
     parser.add_argument("--top-n", type=int, default=30, help="选取前 N 名（默认 30）")
     parser.add_argument("--overlap", type=float, default=0.8, help="节点重叠上限（默认 0.8）")
@@ -108,7 +109,7 @@ def main() -> int:
     parser.add_argument(
         "--export-global-rag",
         action="store_true",
-        help="额外导出一份到 data/processed/rag/（默认仅写入当前 run）",
+        help="额外导出一份到 data/processed/rag/（兼容历史流程，默认关闭）",
     )
     args = parser.parse_args()
 
@@ -176,7 +177,7 @@ def main() -> int:
         regression_meta = load_metadata(regression_meta_path)
         decay_factor = regression_meta.get("decay_factor")
 
-    feature_names = list(objective_coefficients.keys())
+    feature_names = list(objective_coefficients.keys()) or list(FEATURE_REGISTRY.keys())
     hdkn_cache = build_hdkn_subnetwork_feature_cache(
         HDKN,
         hist_end_year=hist_end_year,
